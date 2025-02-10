@@ -2,12 +2,9 @@ version: '3.8'
 
 services:
   gitlab:
-    container_name: my_gitlab
     image: gitlab/gitlab-ce:latest
     restart: always
     ports:
-      - '80:80'
-      - '443:443'
       - '2222:22'
     volumes:
       - './Gitlab_Data/configs:/etc/gitlab'
@@ -15,7 +12,7 @@ services:
       - './Gitlab_Data/logs:/var/log/gitlab'
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url "http://10.10.10.2"
+        #external_url "http://10.10.10.2"
         gitlab_rails['initial_root_password'] = "your_root_password"
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
         gitlab_rails['db_adapter'] = "postgresql"
@@ -25,9 +22,13 @@ services:
         gitlab_rails['db_password'] = "123"
         gitlab_rails['db_host'] = "postgres"
         gitlab_rails['db_port'] = 5432
+        #                 nginx                #
+        #nginx['enable'] = false
+        #gitlab_rails['gitlab_https'] = true
+        #gitlab_rails['gitlab_port'] = 443
+        #gitlab_rails['gitlab_host'] = '127.0.0.1'
     networks:
       git-net:
-        ipv4_address: 10.10.10.2
     deploy:
       replicas: 1
       resources:
@@ -38,7 +39,6 @@ services:
 
   postgres:
     image: postgres:latest
-    container_name: my_postgres
     restart: always
     ports:
       - '5432:5432'
@@ -52,11 +52,22 @@ services:
       replicas: 1
     networks:
       git-net:
-        ipv4_address: 10.10.10.4
+  nginx:
+    image: nginx:latest
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    deploy:
+      replicas: 1
+    networks:
+      git-net:
+    depends_on:
+      - gitlab
+
 
 networks:
   git-net:
     driver: overlay
-    ipam:
-      config:
-        - subnet: 10.10.10.0/24
