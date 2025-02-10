@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+
   gitlab:
     image: gitlab/gitlab-ce:latest
     restart: always
@@ -27,8 +28,11 @@ services:
         #gitlab_rails['gitlab_https'] = true
         #gitlab_rails['gitlab_port'] = 443
         #gitlab_rails['gitlab_host'] = '127.0.0.1'
+        #                 redis                #
+        gitlab_rails['redis_host'] = "redis"
+        gitlab_rails['redis_port'] = 6379
     networks:
-      git-net:
+      - git-net
     deploy:
       replicas: 1
       resources:
@@ -36,6 +40,7 @@ services:
           memory: "10GB"
     depends_on:
       - postgres
+
 
   postgres:
     image: postgres:latest
@@ -51,7 +56,9 @@ services:
     deploy:
       replicas: 1
     networks:
-      git-net:
+      - git-net
+
+
   nginx:
     image: nginx:latest
     restart: always
@@ -63,10 +70,20 @@ services:
     deploy:
       replicas: 1
     networks:
-      git-net:
+      - git-net
     depends_on:
       - gitlab
 
+  redis:
+    image: redis:latest
+    restart: always
+    environment:
+      - REDIS_PORT=6379
+    volumes:
+      - ./redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - git-net
 
 networks:
   git-net:
